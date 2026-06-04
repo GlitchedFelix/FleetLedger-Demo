@@ -93,7 +93,12 @@ async function initSupabase(url, key) {
   try {
     db = window.supabase.createClient(url, key);
     db.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN')  { showApp(); loadAll(); }
+      if (event === 'SIGNED_IN') {
+        showApp();
+        setConnUI(true, 'Connected');
+        document.getElementById('setup-banner').classList.add('hidden');
+        loadAll();
+      }
       if (event === 'SIGNED_OUT') { showLogin(); }
     });
     const { data: { session } } = await db.auth.getSession();
@@ -104,6 +109,8 @@ async function initSupabase(url, key) {
       document.getElementById('setup-banner').classList.add('hidden');
     } else {
       showLogin();
+      document.getElementById('login-email').value    = DEMO_EMAIL;
+      document.getElementById('login-password').value = DEMO_PASSWORD;
     }
   } catch (e) {
     console.error('Supabase init exception:', e);
@@ -167,12 +174,12 @@ async function loadAll() {
     db.from('expenses').select('*').order('expense_date', { ascending: false }),
   ]);
   if (tripsRes.error) { toast('Trips load error: ' + tripsRes.error.message, 'error'); return; }
-  if (expRes.error)   { console.error('expenses load error', expRes.error); }
+  if (expRes.error)   { toast('Expenses load error: ' + expRes.error.message, 'error'); return; }
   state.trips    = tripsRes.data || [];
   state.expenses = expRes.data  || [];
   renderDashboard();
-  loadTrips();
-  loadExpenses();
+  renderTripsTable(state.trips);
+  renderExpensesTable(state.expenses);
   loadSavedRanges();
 }
 
